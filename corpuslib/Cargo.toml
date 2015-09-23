@@ -1,0 +1,4 @@
+[package]
+name = "corpuslib"
+version = "0.1.0"
+authors = ["Daniel Yarlett <daniel.yarlett@gmail.com>"]
