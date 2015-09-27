@@ -11,7 +11,7 @@ impl Corpus {
     fn new(tokens: Vec<String>) -> Corpus {
         // Allocate corpus and suffix.
         let n = tokens.len();
-        let mut corpus: Vec<usize> = vec![0; n];
+        let mut corpus: Vec<usize> = Vec::new();
         // Assign integers to corpus.
         let mut map = HashMap::new();
         let mut i:usize = 0;
@@ -22,11 +22,10 @@ impl Corpus {
             }
         }
         // Set suffix array.
-        let mut suffix: Vec<usize> = vec![0; n];
-        for i in 0..suffix.len() {
-            suffix[i] = i
+        let mut suffix: Vec<usize> = Vec::new();
+        for i in 0..n {
+            suffix.push(i);
         }
-
         {
             let sortby_closure = |a: &usize, b: &usize| {
                 corpus[*a].cmp(&corpus[*b])
@@ -39,24 +38,28 @@ impl Corpus {
 }
 
 #[test]
-fn check_suffix_ordering() {
-    // make strings.
+fn check_corpus_properties() {
     let vocab = 100;
     let n = 10000;
+    // make strings.
     let mut tokens: Vec<String> = Vec::with_capacity(n);
     for _ in 0..n {
         let x = rand::random::<usize>() % vocab;
         tokens.push(format!("{}", x));
     }
-    //
+    // create corpus.
     let c = Corpus::new(tokens);
-    //
+    // check lengths.
+    if c.corpus.len() != n || c.suffix.len() != n {
+        assert!(false);
+    }
+    // check suffix ordering.
     for i in 0..(c.suffix.len()-1) {
         let w1 = c.corpus[c.suffix[i]];
         let w2 = c.corpus[c.suffix[i + 1]];
+        println!("{}: {}-->{} {}-->{}", i, c.suffix[i], w1, c.suffix[i+1], w2);
         if w1 > w2 {
             assert!(false);
         }
     }
-
 }
