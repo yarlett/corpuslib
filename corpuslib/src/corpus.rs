@@ -1,3 +1,4 @@
+use std::cmp;
 use std::collections::HashMap;
 
 extern crate rand;
@@ -27,13 +28,37 @@ impl Corpus {
             suffix.push(i);
         }
         {
-            let sortby_closure = |a: &usize, b: &usize| {
-                corpus[*a].cmp(&corpus[*b])
+            let suffix_ordering = |a: &usize, b: &usize| {
+                seq_ordering(&corpus[*a..], &corpus[*b..])
             };
-            suffix.sort_by(sortby_closure);
+            suffix.sort_by(suffix_ordering);
         }
         // Return.
         Corpus { corpus: corpus, suffix: suffix }
+    }
+}
+
+fn seq_ordering(seq1: &[usize], seq2: &[usize]) -> cmp::Ordering {
+    let (n1, n2) = (seq1.len(), seq2.len());
+    let n = cmp::min(n1, n2);
+    // Make comparisons.
+    for pos in 0..n {
+        if seq1[pos] < seq2[pos] {
+            return cmp::Ordering::Less;
+        }
+        else if seq2[pos] < seq1[pos] {
+            return cmp::Ordering::Greater;
+        }
+    }
+    // If comparisons fail to find a difference, go by length.
+    if n1 == n2 {
+        return cmp::Ordering::Equal;
+    }
+    else if n1 < n2 {
+        return cmp::Ordering::Less;
+    }
+    else {
+        return cmp::Ordering::Greater;
     }
 }
 
@@ -55,11 +80,10 @@ fn check_corpus_properties() {
     }
     // check suffix ordering.
     for i in 0..(c.suffix.len()-1) {
-        let w1 = c.corpus[c.suffix[i]];
-        let w2 = c.corpus[c.suffix[i + 1]];
-        println!("{}: {}-->{} {}-->{}", i, c.suffix[i], w1, c.suffix[i+1], w2);
-        if w1 > w2 {
-            assert!(false);
-        }
+        let seq1 = &c.corpus[c.suffix[i]..];
+        let seq2 = &c.corpus[c.suffix[i + 1]..];
+        let ord = seq_ordering(seq1, seq2);
+        println!("{:?}", ord);
+        assert!(ord != cmp::Ordering::Greater);
     }
 }
