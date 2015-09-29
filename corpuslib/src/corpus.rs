@@ -3,28 +3,29 @@ use std::collections::HashMap;
 
 extern crate rand;
 
-struct Corpus {
-    corpus: Vec<usize>,
-    suffix: Vec<usize>,
+pub struct Corpus {
+    pub corpus: Vec<usize>,
+    pub suffix: Vec<usize>,
+    pub wordmap: HashMap<String, usize>,
 }
 
 impl Corpus {
-    fn new(tokens: Vec<String>) -> Corpus {
+    pub fn new(tokens: Vec<String>) -> Corpus {
         // Allocate corpus and suffix.
         let n = tokens.len();
-        let mut corpus: Vec<usize> = Vec::new();
+        let mut corpus: Vec<usize> = Vec::with_capacity(n);
         // Assign integers to corpus.
-        let mut map = HashMap::new();
+        let mut wordmap = HashMap::new();
         let mut i:usize = 0;
         for token in tokens.iter() {
-            match map.get(token) {
+            match wordmap.get(token) {
                 Some(&v) => { corpus.push(v) },
-                _ => { map.insert(token, i); corpus.push(i); i += 1}
+                _ => { wordmap.insert(token.to_string(), i); corpus.push(i); i += 1}
             }
         }
         // Set suffix array.
-        let mut suffix: Vec<usize> = Vec::new();
-        for i in 0..n {
+        let mut suffix: Vec<usize> = Vec::with_capacity(corpus.len());
+        for i in 0..corpus.len() {
             suffix.push(i);
         }
         {
@@ -34,7 +35,7 @@ impl Corpus {
             suffix.sort_by(suffix_ordering);
         }
         // Return.
-        Corpus { corpus: corpus, suffix: suffix }
+        Corpus { corpus: corpus, suffix: suffix, wordmap: wordmap }
     }
 }
 
@@ -63,23 +64,22 @@ fn seq_ordering(seq1: &[usize], seq2: &[usize]) -> cmp::Ordering {
 }
 
 #[test]
-fn check_corpus_properties() {
-    let vocab = 100;
-    let n = 10000;
-    // make strings.
-    let mut tokens: Vec<String> = Vec::with_capacity(n);
-    for _ in 0..n {
-        let x = rand::random::<usize>() % vocab;
-        tokens.push(format!("{}", x));
+fn check_corpus() {
+    let (ntypes, ntokens) = (100, 10000);
+    // Generate a corpus of strings.
+    let mut tokens: Vec<String> = Vec::with_capacity(ntokens);
+    for _ in 0..ntokens {
+        let token = rand::random::<usize>() % ntypes;
+        tokens.push(format!("{}", token));
     }
-    // create corpus.
+    // Create the corpus.
     let c = Corpus::new(tokens);
-    // check lengths.
-    if c.corpus.len() != n || c.suffix.len() != n {
+    // Check corpus and suffix array are the same length.
+    if c.corpus.len() != ntokens || c.suffix.len() != ntokens {
         assert!(false);
     }
-    // check suffix ordering.
-    for i in 0..(c.suffix.len()-1) {
+    // Check the ordering of corpus suffixes.
+    for i in 0..(c.suffix.len() - 1) {
         let seq1 = &c.corpus[c.suffix[i]..];
         let seq2 = &c.corpus[c.suffix[i + 1]..];
         let ord = seq_ordering(seq1, seq2);

@@ -1,5 +1,1 @@
-mod corpus;
-
-#[test]
-fn it_works() {
-}
+pub mod corpus;
