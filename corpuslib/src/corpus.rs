@@ -1,8 +1,6 @@
 use std::cmp;
 use std::collections::HashMap;
 
-extern crate rand;
-
 pub struct Corpus {
     pub corpus: Vec<usize>,
     pub suffix: Vec<usize>,
@@ -39,7 +37,7 @@ impl Corpus {
     }
 }
 
-fn seq_ordering(seq1: &[usize], seq2: &[usize]) -> cmp::Ordering {
+pub fn seq_ordering(seq1: &[usize], seq2: &[usize]) -> cmp::Ordering {
     let (n1, n2) = (seq1.len(), seq2.len());
     let n = cmp::min(n1, n2);
     // Make comparisons.
@@ -63,27 +61,35 @@ fn seq_ordering(seq1: &[usize], seq2: &[usize]) -> cmp::Ordering {
     }
 }
 
-#[test]
-fn check_corpus() {
-    let (ntypes, ntokens) = (100, 10000);
-    // Generate a corpus of strings.
-    let mut tokens: Vec<String> = Vec::with_capacity(ntokens);
-    for _ in 0..ntokens {
-        let token = rand::random::<usize>() % ntypes;
-        tokens.push(format!("{}", token));
-    }
-    // Create the corpus.
-    let c = Corpus::new(tokens);
-    // Check corpus and suffix array are the same length.
-    if c.corpus.len() != ntokens || c.suffix.len() != ntokens {
-        assert!(false);
-    }
-    // Check the ordering of corpus suffixes.
-    for i in 0..(c.suffix.len() - 1) {
-        let seq1 = &c.corpus[c.suffix[i]..];
-        let seq2 = &c.corpus[c.suffix[i + 1]..];
-        let ord = seq_ordering(seq1, seq2);
-        println!("{:?}", ord);
-        assert!(ord != cmp::Ordering::Greater);
+#[cfg(test)]
+mod tests {
+    extern crate rand;
+
+    use std::cmp;
+    use super::*;
+
+    #[test]
+    fn check_corpus() {
+        let (ntypes, ntokens) = (100, 10000);
+        // Generate a corpus of strings.
+        let mut tokens: Vec<String> = Vec::with_capacity(ntokens);
+        for _ in 0..ntokens {
+            let token = rand::random::<usize>() % ntypes;
+            tokens.push(format!("{}", token));
+        }
+        // Create the corpus.
+        let c = Corpus::new(tokens);
+        // Check corpus and suffix array are the same length.
+        if c.corpus.len() != ntokens || c.suffix.len() != ntokens {
+            assert!(false);
+        }
+        // Check the ordering of corpus suffixes.
+        for i in 0..(c.suffix.len() - 1) {
+            let seq1 = &c.corpus[c.suffix[i]..];
+            let seq2 = &c.corpus[c.suffix[i + 1]..];
+            let ord = seq_ordering(seq1, seq2);
+            println!("{:?}", ord);
+            assert!(ord != cmp::Ordering::Greater);
+        }
     }
 }
