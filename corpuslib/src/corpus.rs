@@ -45,6 +45,13 @@ impl Corpus {
         }
         pos
     }
+
+    pub fn search_binary(&self, seq: Vec<usize>) -> Result<usize, usize> {
+        let foo = |probe| {
+            seq_ordering_n(&seq[..], &self.corpus[self.suffix[probe]..], seq.len())
+        };
+        self.suffix.binary_search_by(foo)
+    }
 }
 
 pub fn seq_ordering_n(seq1: &[usize], seq2: &[usize], n: usize) -> cmp::Ordering {
