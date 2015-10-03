@@ -1,24 +1,31 @@
 use std::cmp;
-use std::collections::HashMap;
+
+use sequence::Sequence;
+use stringmap::Stringmap;
+
+pub struct Range {
+    pub start: usize,
+    pub end: usize,
+}
 
 pub struct Corpus {
-    pub corpus: Vec<usize>,
+    pub sequence: Sequence,
     pub suffix: Vec<usize>,
-    pub wordmap: HashMap<String, usize>,
+    pub stringmap: Stringmap,
 }
 
 impl Corpus {
-    pub fn new(tokens: Vec<String>) -> Corpus {
-        // Allocate corpus and suffix.
+    pub fn new(strings: Vec<String>) -> Corpus {
+        // Allocate sequence and suffix array.
         let n = tokens.len();
-        let mut corpus: Vec<usize> = Vec::with_capacity(n);
+        let mut sequence: Sequence = Sequence::new(); //Vec::with_capacity(n);
         // Assign integers to corpus.
-        let mut wordmap = HashMap::new();
-        let mut i:usize = 0;
+        let mut stringmap = Stringmap::new();
+        let mut i: usize = 0;
         for token in tokens.iter() {
-            match wordmap.get(token) {
+            match stringmap.map.get(token) {
                 Some(&v) => { corpus.push(v) },
-                _ => { wordmap.insert(token.to_string(), i); corpus.push(i); i += 1}
+                _ => { stringmap.map.insert(token.to_string(), i); corpus.push(i); i += 1}
             }
         }
         // Set suffix array.
@@ -33,56 +40,36 @@ impl Corpus {
             suffix.sort_by(suffix_ordering);
         }
         // Return.
-        Corpus { corpus: corpus, suffix: suffix, wordmap: wordmap }
+        Corpus { corpus: corpus, suffix: suffix, stringmap: stringmap }
     }
 
-    pub fn search_linear(&self, seq: Vec<usize>) -> Vec<usize> {
-        let mut pos: Vec<usize> = Vec::new();
-        for p in 0..self.corpus.len() {
-            if seq_ordering_n(&self.corpus[p..], &seq[..], seq.len()) == cmp::Ordering::Equal {
-                pos.push(p)
+    // Returns range of suffix array that points to required sequence in corpus.
+    pub fn search_linear(&self, seq: Vec<usize>) -> Result<Range, usize> {
+        let mut range = Range{ start: -1, end: -1};
+        for p in 0..self.suffix.len() {
+            if seq_ordering_n(&self.corpus[self.suffix[p]..], &seq[..], seq.len()) == cmp::Ordering::Equal {
+                if (range.start == -1) || (p < range.start) {
+                    range.start = p;
+                }
+                if (range.end == -1) || (p > range.end) {
+                    range.end = p;
+                }
             }
         }
-        pos
-    }
-
-    pub fn search_binary(&self, seq: Vec<usize>) -> Result<usize, usize> {
-        let foo = |probe| {
-            seq_ordering_n(&seq[..], &self.corpus[self.suffix[probe]..], seq.len())
-        };
-        self.suffix.binary_search_by(foo)
-    }
-}
-
-pub fn seq_ordering_n(seq1: &[usize], seq2: &[usize], n: usize) -> cmp::Ordering {
-    let (n1, n2) = (seq1.len(), seq2.len());
-    let mut look_n = cmp::min(n1, n2);
-    if n < look_n {
-        look_n = n;
-    }
-    // Make comparisons.
-    for pos in 0..look_n {
-        if seq1[pos] < seq2[pos] {
-            return cmp::Ordering::Less;
+        if range.start == -1 {
+            Err(-1)
         }
-        else if seq2[pos] < seq1[pos] {
-            return cmp::Ordering::Greater;
+        else {
+            Ok(range)
         }
     }
-    // All assigned elements are the same, so make comparison based on length (shorter is lesser).
-    if look_n == n {
-        return cmp::Ordering::Equal;
-    } else if n1 < n2 {
-        return cmp::Ordering::Less;
-    }
-    else {
-        return cmp::Ordering::Greater;
-    }
-}
 
-pub fn seq_ordering(seq1: &[usize], seq2: &[usize]) -> cmp::Ordering {
-    let (n1, n2) = (seq1.len(), seq2.len());
-    seq_ordering_n(seq1, seq2, cmp::max(n1, n2) + 1)
+    // pub fn search_binary(&self, seq: Vec<usize>) -> Result<Range, usize> {
+    //     let foo = |probe: &usize| {
+    //         seq_ordering_n(&seq[..], &self.corpus[probe..], seq.len())
+    //     };
+    //     self.suffix[..].binary_search_by(foo)
+    // }
 }
 
 #[cfg(test)]
@@ -132,6 +119,9 @@ mod tests {
         let mut seq = Vec::new();
         seq.extend(c.corpus[0..3].iter());
         let cpos = c.search_linear(seq);
-        println!("{:?}", cpos);
+        match cpos {
+            Ok(r) => println!("{:} {:}", r.start, r.end),
+            _ => println!("fail"),
+        }
     }
 }
