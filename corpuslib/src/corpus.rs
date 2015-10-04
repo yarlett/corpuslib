@@ -1,15 +1,10 @@
 use std::cmp;
 
-use sequence::Sequence;
+use sequence::{sequence_ordering, sequence_ordering_n};
 use stringmap::Stringmap;
 
-pub struct Range {
-    pub start: usize,
-    pub end: usize,
-}
-
 pub struct Corpus {
-    pub sequence: Sequence,
+    pub sequence: Vec<usize>,
     pub suffix: Vec<usize>,
     pub stringmap: Stringmap,
 }
@@ -17,37 +12,40 @@ pub struct Corpus {
 impl Corpus {
     pub fn new(strings: Vec<String>) -> Corpus {
         // Allocate sequence and suffix array.
-        let n = tokens.len();
-        let mut sequence: Sequence = Sequence::new(); //Vec::with_capacity(n);
+        let mut sequence: Vec<usize> = Vec::with_capacity(strings.len());
         // Assign integers to corpus.
         let mut stringmap = Stringmap::new();
-        let mut i: usize = 0;
-        for token in tokens.iter() {
-            match stringmap.map.get(token) {
-                Some(&v) => { corpus.push(v) },
-                _ => { stringmap.map.insert(token.to_string(), i); corpus.push(i); i += 1}
+        for s in strings.iter() {
+            match stringmap.get(s) {
+                Some(&code_value) => {
+                    sequence.push(code_value);
+                },
+                None => {
+                    let code_value = stringmap.add(&s);
+                    sequence.push(code_value);
+                },
             }
         }
         // Set suffix array.
-        let mut suffix: Vec<usize> = Vec::with_capacity(corpus.len());
-        for i in 0..corpus.len() {
+        let mut suffix: Vec<usize> = Vec::with_capacity(sequence.len());
+        for i in 0..sequence.len() {
             suffix.push(i);
         }
         {
             let suffix_ordering = |a: &usize, b: &usize| {
-                seq_ordering(&corpus[*a..], &corpus[*b..])
+                sequence[*a..].cmp(&sequence[*b..])
             };
             suffix.sort_by(suffix_ordering);
         }
         // Return.
-        Corpus { corpus: corpus, suffix: suffix, stringmap: stringmap }
+        Corpus { sequence: sequence, suffix: suffix, stringmap: stringmap }
     }
 
     // Returns range of suffix array that points to required sequence in corpus.
-    pub fn search_linear(&self, seq: Vec<usize>) -> Result<Range, usize> {
+    pub fn search_linear(&self, seq: &[usize]) -> Result<Range, usize> {
         let mut range = Range{ start: -1, end: -1};
         for p in 0..self.suffix.len() {
-            if seq_ordering_n(&self.corpus[self.suffix[p]..], &seq[..], seq.len()) == cmp::Ordering::Equal {
+            if sequence_ordering_n(&self.sequence[self.suffix[p]..], &seq[..], seq.len()) == cmp::Ordering::Equal {
                 if (range.start == -1) || (p < range.start) {
                     range.start = p;
                 }
@@ -72,12 +70,20 @@ impl Corpus {
     // }
 }
 
+pub struct Range {
+    pub start: usize,
+    pub end: usize,
+}
+
+
 #[cfg(test)]
 mod tests {
     extern crate rand;
 
     use std::cmp;
     use super::*;
+
+    use sequence;
 
     fn random_corpus(ntypes: usize, ntokens: usize) -> Corpus {
         // Generate a corpus of strings.
@@ -96,15 +102,15 @@ mod tests {
         // Generate random corpus.
         let (ntypes, ntokens) = (100, 10000);
         let c = random_corpus(ntypes, ntokens);
-        // Check corpus and suffix array are the same length.
-        if c.corpus.len() != ntokens || c.suffix.len() != ntokens {
+        // Check sequence and suffix array are the same length.
+        if c.sequence.len() != ntokens || c.suffix.len() != ntokens {
             assert!(false);
         }
         // Check the ordering of corpus suffixes.
         for i in 0..(c.suffix.len() - 1) {
-            let seq1 = &c.corpus[c.suffix[i]..];
-            let seq2 = &c.corpus[c.suffix[i + 1]..];
-            let ord = seq_ordering(seq1, seq2);
+            let seq1 = &c.sequence[c.suffix[i]..];
+            let seq2 = &c.sequence[c.suffix[i + 1]..];
+            let ord = sequence::sequence_ordering(seq1, seq2);
             println!("{:?}", ord);
             assert!(ord != cmp::Ordering::Greater);
         }
@@ -117,8 +123,8 @@ mod tests {
         let c = random_corpus(ntypes, ntokens);
         //
         let mut seq = Vec::new();
-        seq.extend(c.corpus[0..3].iter());
-        let cpos = c.search_linear(seq);
+        seq.extend(c.sequence[0..3].iter());
+        let cpos = c.search_linear(&seq[..]);
         match cpos {
             Ok(r) => println!("{:} {:}", r.start, r.end),
             _ => println!("fail"),
