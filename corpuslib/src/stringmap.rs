@@ -7,13 +7,13 @@ pub struct Stringmap {
 
 impl Stringmap {
     pub fn new() -> Stringmap {
-        let mut code_ctr = 0;
-        let mut map = HashMap::new();
+        let code_ctr = 0;
+        let map = HashMap::new();
         Stringmap{ code_ctr: code_ctr, map: map }
     }
 
     pub fn add(&mut self, s: &String) -> usize {
-        let mut return_code: usize;
+        let return_code: usize;
         match self.get(s) {
             Some(&code_value) => { return_code = code_value },
             None => {

@@ -1,6 +1,6 @@
 use std::cmp;
 
-use sequence::{sequence_ordering, sequence_ordering_n};
+use sequence::{sequence_ordering_n};
 use stringmap::Stringmap;
 
 pub struct Corpus {
@@ -42,39 +42,66 @@ impl Corpus {
     }
 
     // Returns range of suffix array that points to required sequence in corpus.
-    pub fn search_linear(&self, seq: &[usize]) -> Result<Range, usize> {
-        let mut range = Range{ start: -1, end: -1};
-        for p in 0..self.suffix.len() {
-            if sequence_ordering_n(&self.sequence[self.suffix[p]..], &seq[..], seq.len()) == cmp::Ordering::Equal {
-                if (range.start == -1) || (p < range.start) {
-                    range.start = p;
+    pub fn search_linear(&self, seq: &[usize]) -> Result<(usize, usize), bool> {
+        let n = seq.len();
+        let mut found: bool = false;
+        let mut lo = 0;
+        let mut hi = 0;
+        for suffix_pos in 0..self.suffix.len() {
+            if sequence_ordering_n(&self.sequence[self.suffix[suffix_pos]..], seq, n) == cmp::Ordering::Equal {
+                if !found || (suffix_pos < lo) {
+                    found = true;
+                    lo = suffix_pos;
                 }
-                if (range.end == -1) || (p > range.end) {
-                    range.end = p;
+                if !found || (suffix_pos > hi) {
+                    found = true;
+                    hi = suffix_pos
                 }
             }
         }
-        if range.start == -1 {
-            Err(-1)
+        if !found {
+            Err(false)
         }
         else {
-            Ok(range)
+            Ok((lo, hi))
         }
     }
 
-    // pub fn search_binary(&self, seq: Vec<usize>) -> Result<Range, usize> {
-    //     let foo = |probe: &usize| {
-    //         seq_ordering_n(&seq[..], &self.corpus[probe..], seq.len())
-    //     };
-    //     self.suffix[..].binary_search_by(foo)
-    // }
+    pub fn search_binary(&self, seq: &[usize]) -> Result<(usize, usize), bool> {
+        let n = seq.len();
+        // Binary search to get initial search location.
+        let search_by_suffix_probe = |probe: &usize| {
+            sequence_ordering_n(seq, &self.sequence[self.suffix[*probe]..], n)
+        };
+        let binary_search_result = self.suffix[..].binary_search_by(search_by_suffix_probe);
+        // Act on binary search result.
+        match binary_search_result {
+            Err(_) => return Err(false),
+            Ok(suffix_pos) => {
+                let mut lo = suffix_pos;
+                let mut hi = suffix_pos;
+                // Search lower.
+                while lo > 0 {
+                    if sequence_ordering_n(&self.sequence[self.suffix[lo - 1]..], seq, n) == cmp::Ordering::Equal {
+                        lo -= 1;
+                    } else {
+                        break;
+                    }
+                }
+                // Search higher.
+                while hi < (&self.suffix.len() - 1) {
+                    if sequence_ordering_n(&self.sequence[self.suffix[hi + 1]..], seq, n) == cmp::Ordering::Equal {
+                        hi += 1;
+                    } else {
+                        break;
+                    }
+                }
+                // Return suffix range.
+                return Ok((lo, hi));
+            }
+        }
+    }
 }
-
-pub struct Range {
-    pub start: usize,
-    pub end: usize,
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -111,23 +138,25 @@ mod tests {
             let seq1 = &c.sequence[c.suffix[i]..];
             let seq2 = &c.sequence[c.suffix[i + 1]..];
             let ord = sequence::sequence_ordering(seq1, seq2);
-            println!("{:?}", ord);
+            // println!("{:?}", ord);
             assert!(ord != cmp::Ordering::Greater);
         }
     }
 
     #[test]
-    fn check_search_linear() {
+    fn check_search() {
         // Generate random corpus.
         let (ntypes, ntokens) = (10, 10000);
         let c = random_corpus(ntypes, ntokens);
-        //
-        let mut seq = Vec::new();
-        seq.extend(c.sequence[0..3].iter());
-        let cpos = c.search_linear(&seq[..]);
-        match cpos {
-            Ok(r) => println!("{:} {:}", r.start, r.end),
-            _ => println!("fail"),
+        // Compare search results for sub-sequences to make sure they agree.
+        for n in 1..3 {
+            for seq_pos in 0..(c.sequence.len() - n) {
+                let seq = &c.sequence[seq_pos..(seq_pos + n)];
+                let r1 = c.search_linear(seq);
+                let r2 = c.search_binary(seq);
+                println!("Searching for {:?} (seq_pos={:}; n={:}): linear {:?}; binary {:?}", seq, seq_pos, n, r1, r2);
+                assert!(r1 == r2);
+            }
         }
     }
 }
