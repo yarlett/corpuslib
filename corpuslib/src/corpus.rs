@@ -1,6 +1,6 @@
 use std::cmp;
 
-use sequence::{sequence_ordering_n};
+use sequence::{sequence_compare_n};
 use stringmap::Stringmap;
 
 pub struct Corpus {
@@ -45,17 +45,17 @@ impl Corpus {
     pub fn search_linear(&self, seq: &[usize]) -> Result<(usize, usize), bool> {
         let n = seq.len();
         let mut found: bool = false;
-        let mut lo = 0;
-        let mut hi = 0;
+        let mut suffix_lo = 0;
+        let mut suffix_hi = 0;
         for suffix_pos in 0..self.suffix.len() {
-            if sequence_ordering_n(&self.sequence[self.suffix[suffix_pos]..], seq, n) == cmp::Ordering::Equal {
-                if !found || (suffix_pos < lo) {
+            if sequence_compare_n(&self.sequence[self.suffix[suffix_pos]..], seq, &n) == cmp::Ordering::Equal {
+                if !found || (suffix_pos < suffix_lo) {
                     found = true;
-                    lo = suffix_pos;
+                    suffix_lo = suffix_pos;
                 }
-                if !found || (suffix_pos > hi) {
+                if !found || (suffix_pos > suffix_hi) {
                     found = true;
-                    hi = suffix_pos
+                    suffix_hi = suffix_pos
                 }
             }
         }
@@ -63,41 +63,41 @@ impl Corpus {
             Err(false)
         }
         else {
-            Ok((lo, hi))
+            Ok((suffix_lo, suffix_hi))
         }
     }
 
     pub fn search_binary(&self, seq: &[usize]) -> Result<(usize, usize), bool> {
         let n = seq.len();
         // Binary search to get initial search location.
-        let search_by_suffix_probe = |probe: &usize| {
-            sequence_ordering_n(seq, &self.sequence[self.suffix[*probe]..], n)
+        let search_by_suffix_probe = | suffix_pos: &usize | {
+            sequence_compare_n(&self.sequence[self.suffix[*suffix_pos]..], seq, &n)
         };
-        let binary_search_result = self.suffix[..].binary_search_by(search_by_suffix_probe);
+        let binary_search_result = self.suffix.binary_search_by(search_by_suffix_probe);
         // Act on binary search result.
         match binary_search_result {
             Err(_) => return Err(false),
             Ok(suffix_pos) => {
-                let mut lo = suffix_pos;
-                let mut hi = suffix_pos;
+                let mut suffix_lo = suffix_pos;
+                let mut suffix_hi = suffix_pos;
                 // Search lower.
-                while lo > 0 {
-                    if sequence_ordering_n(&self.sequence[self.suffix[lo - 1]..], seq, n) == cmp::Ordering::Equal {
-                        lo -= 1;
+                while suffix_lo > 0 {
+                    if sequence_compare_n(&self.sequence[self.suffix[suffix_lo - 1]..], seq, &n) == cmp::Ordering::Equal {
+                        suffix_lo -= 1;
                     } else {
                         break;
                     }
                 }
                 // Search higher.
-                while hi < (&self.suffix.len() - 1) {
-                    if sequence_ordering_n(&self.sequence[self.suffix[hi + 1]..], seq, n) == cmp::Ordering::Equal {
-                        hi += 1;
+                while suffix_hi < (&self.suffix.len() - 1) {
+                    if sequence_compare_n(&self.sequence[self.suffix[suffix_hi + 1]..], seq, &n) == cmp::Ordering::Equal {
+                        suffix_hi += 1;
                     } else {
                         break;
                     }
                 }
                 // Return suffix range.
-                return Ok((lo, hi));
+                return Ok((suffix_lo, suffix_hi));
             }
         }
     }
@@ -125,7 +125,7 @@ mod tests {
     }
 
     #[test]
-    fn check_corpus() {
+    fn check_corpus_creation() {
         // Generate random corpus.
         let (ntypes, ntokens) = (100, 10000);
         let c = random_corpus(ntypes, ntokens);
@@ -133,13 +133,20 @@ mod tests {
         if c.sequence.len() != ntokens || c.suffix.len() != ntokens {
             assert!(false);
         }
+    }
+
+    #[test]
+    fn check_suffix_ordering() {
+        // Generate random corpus.
+        let (ntypes, ntokens) = (100, 10000);
+        let c = random_corpus(ntypes, ntokens);
         // Check the ordering of corpus suffixes.
         for i in 0..(c.suffix.len() - 1) {
             let seq1 = &c.sequence[c.suffix[i]..];
             let seq2 = &c.sequence[c.suffix[i + 1]..];
-            let ord = sequence::sequence_ordering(seq1, seq2);
+            let ord = sequence::sequence_compare(seq1, seq2);
             // println!("{:?}", ord);
-            assert!(ord != cmp::Ordering::Greater);
+            assert!(ord == cmp::Ordering::Less);
         }
     }
 
