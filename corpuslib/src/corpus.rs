@@ -70,8 +70,8 @@ impl Corpus {
     pub fn search_binary(&self, seq: &[usize]) -> Result<(usize, usize), bool> {
         let n = seq.len();
         // Binary search to get initial search location.
-        let search_by_suffix_probe = | suffix_pos: &usize | {
-            sequence_compare_n(&self.sequence[self.suffix[*suffix_pos]..], seq, &n)
+        let search_by_suffix_probe = | suffix_value: &usize | {
+            sequence_compare_n(&self.sequence[*suffix_value..], seq, &n)
         };
         let binary_search_result = self.suffix.binary_search_by(search_by_suffix_probe);
         // Act on binary search result.
@@ -148,20 +148,20 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn check_search() {
-    //     // Generate random corpus.
-    //     let (ntypes, ntokens) = (10, 10000);
-    //     let c = random_corpus(ntypes, ntokens);
-    //     // Compare search results for sub-sequences to make sure they agree.
-    //     for n in 1..3 {
-    //         for seq_pos in 0..(c.sequence.len() - n) {
-    //             let seq = &c.sequence[seq_pos..(seq_pos + n)];
-    //             let r1 = c.search_linear(seq);
-    //             let r2 = c.search_binary(seq);
-    //             println!("Searching for {:?} (seq_pos={:}; n={:}): linear {:?}; binary {:?}", seq, seq_pos, n, r1, r2);
-    //             assert!(r1 == r2);
-    //         }
-    //     }
-    // }
+    #[test]
+    fn check_search() {
+        // Generate random corpus.
+        let (ntypes, ntokens) = (10, 1000);
+        let c = random_corpus(ntypes, ntokens);
+        // Compare search results for sub-sequences to make sure they agree.
+        for n in 1..3 {
+            for seq_pos in 0..(c.sequence.len() - n) {
+                let seq = &c.sequence[seq_pos..(seq_pos + n)];
+                let r1 = c.search_linear(seq);
+                let r2 = c.search_binary(seq);
+                println!("Searching for {:?} (seq_pos={:}; n={:}): linear {:?}; binary {:?}", seq, seq_pos, n, r1, r2);
+                assert!(r1 == r2);
+            }
+        }
+    }
 }
