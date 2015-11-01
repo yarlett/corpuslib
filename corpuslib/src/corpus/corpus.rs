@@ -95,37 +95,15 @@ impl Corpus {
         return Err(false);
     }
 
-    // // Returns distinct ngrams in the corpus.
-    // pub fn ngrams(&self, n: usize) -> Vec<&[usize]> {
-    //     let ngs: Vec<&[usize]> = Vec::new();
-    //
-    //     let mut spos = 0;
-    //     let mut ng = self.corpus[self.suffix[spos]..spos+n];
-    //
-    //     while spos < self.suffix.len() {
-    //         match self.binary_search_right(ng, spos, self.suffix.len()) {
-    //             Ok((next_spos, _)) => {
-    //                 spos = next_spos;
-    //                 ngs.push()
-    //             },
-    //             Error(_) => break,
-    //         }
-    //     }
-    //
-    //
-    //
-    //     ngs
-    // }
-
     // Returns a vector of distinct ngrams of a specified length in the corpus.
-    pub fn ngrams_linear(&self, n:usize) -> Vec<&[usize]> {
+    pub fn ngrams(&self, n:usize) -> Vec<&[usize]> {
         let mut ngs: Vec<&[usize]> = Vec::new();
         if n >= 1 {
-            let seq_max = self.sequence.len() - n + 1;
+            let seq_max = self.sequence.len() - n;
             for suf_pos in 0..self.suffix.len() {
                 let seq_pos = self.suffix[suf_pos];
                 if seq_pos <= seq_max {
-                    let ng = &self.sequence[self.suffix[suf_pos]..(self.suffix[suf_pos] + n)];
+                    let ng = &self.sequence[seq_pos..(seq_pos + n)];
                     let mut add = false;
                     match ngs.last() {
                         Some(ng_last) => {
@@ -133,7 +111,9 @@ impl Corpus {
                                 add = true;
                             }
                         },
-                        None => (),
+                        None => {
+                            add = true;
+                        },
                     }
                     if add {
                         ngs.push(ng);
@@ -207,8 +187,10 @@ impl Corpus {
 mod tests {
     extern crate rand;
 
-    use std::cmp;
     use super::*;
+
+    use std::cmp;
+    use std::collections::HashSet;
 
     use corpus::sequence;
 
@@ -232,6 +214,29 @@ mod tests {
         // Check sequence and suffix array are the same length.
         if c.sequence.len() != ntokens || c.suffix.len() != ntokens {
             assert!(false);
+        }
+    }
+
+    #[test]
+    fn check_ngrams() {
+        // Generate random corpus.
+        let (ntypes, ntokens) = (10, 1000);
+        let c = random_corpus(ntypes, ntokens);
+        // Check ngram properties.
+        for n in 1..5 {
+            let ngs = c.ngrams(n);
+            let num_ngs = ngs.len();
+            // Assert that there are some ngrams.
+            assert!(num_ngs > 0);
+            // Check ngrams are of the correct length.
+            println!("{:} {:}", n, num_ngs);
+            let mut ngs_set: HashSet<&[usize]> = HashSet::new();
+            for ng in ngs {
+                println!("{:} {:?}", n, ng);
+                assert!(ng.len() == n);
+                ngs_set.insert(ng);
+            }
+            assert!(ngs_set.len() == num_ngs);
         }
     }
 
