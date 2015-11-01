@@ -90,15 +90,57 @@ impl Corpus {
             }
         }
         if smax == smin && sequence_compare_n(&self.sequence[self.suffix[smin]..], seq, &n) == cmp::Ordering::Equal {
-            return Ok((smin, left_bound))
+            return Ok((smax, left_bound))
         }
         return Err(false);
     }
 
-    // Returns distinct ngrams in the corpus.
-    pub fn ngrams(&self, n: usize) -> Vec<&[usize]> {
-        let ngs: Vec<&[usize]> = Vec::new();
+    // // Returns distinct ngrams in the corpus.
+    // pub fn ngrams(&self, n: usize) -> Vec<&[usize]> {
+    //     let ngs: Vec<&[usize]> = Vec::new();
+    //
+    //     let mut spos = 0;
+    //     let mut ng = self.corpus[self.suffix[spos]..spos+n];
+    //
+    //     while spos < self.suffix.len() {
+    //         match self.binary_search_right(ng, spos, self.suffix.len()) {
+    //             Ok((next_spos, _)) => {
+    //                 spos = next_spos;
+    //                 ngs.push()
+    //             },
+    //             Error(_) => break,
+    //         }
+    //     }
+    //
+    //
+    //
+    //     ngs
+    // }
 
+    // Returns a vector of distinct ngrams of a specified length in the corpus.
+    pub fn ngrams_linear(&self, n:usize) -> Vec<&[usize]> {
+        let mut ngs: Vec<&[usize]> = Vec::new();
+        if n >= 1 {
+            let seq_max = self.sequence.len() - n + 1;
+            for suf_pos in 0..self.suffix.len() {
+                let seq_pos = self.suffix[suf_pos];
+                if seq_pos <= seq_max {
+                    let ng = &self.sequence[self.suffix[suf_pos]..(self.suffix[suf_pos] + n)];
+                    let mut add = false;
+                    match ngs.last() {
+                        Some(ng_last) => {
+                            if sequence_compare_n(ng_last, ng, &n) != cmp::Ordering::Equal {
+                                add = true;
+                            }
+                        },
+                        None => (),
+                    }
+                    if add {
+                        ngs.push(ng);
+                    }
+                }
+            }
+        }
         ngs
     }
 

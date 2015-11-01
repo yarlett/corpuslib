@@ -1,3 +1,3 @@
-mod corpus;
-mod sequence;
-mod stringmap;
+pub mod corpus;
+pub mod sequence;
+pub mod stringmap;
