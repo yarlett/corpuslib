@@ -1,7 +1,7 @@
 use std::cmp;
 
-use sequence::{sequence_compare, sequence_compare_n};
-use stringmap::Stringmap;
+use corpus::sequence::{sequence_compare, sequence_compare_n};
+use corpus::stringmap::Stringmap;
 
 pub struct Corpus {
     pub sequence: Vec<usize>,
@@ -168,7 +168,7 @@ mod tests {
     use std::cmp;
     use super::*;
 
-    use sequence;
+    use corpus::sequence;
 
     fn random_corpus(ntypes: usize, ntokens: usize) -> Corpus {
         // Generate a corpus of strings.
