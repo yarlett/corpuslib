@@ -3,11 +3,13 @@ use std::cmp;
 use corpus::sequence::{sequence_compare, sequence_compare_n};
 use corpus::stringmap::Stringmap;
 
+
 pub struct Corpus {
     pub sequence: Vec<usize>,
     pub suffix: Vec<usize>,
     pub stringmap: Stringmap,
 }
+
 
 impl Corpus {
     pub fn new(strings: Vec<String>) -> Corpus {
@@ -182,6 +184,7 @@ impl Corpus {
         }
     }
 }
+
 
 #[cfg(test)]
 mod tests {
