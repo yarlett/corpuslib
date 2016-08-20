@@ -29,8 +29,8 @@ impl LineStreamer {
         let mut ls = LineStreamer{
             entries: entries,
             entries_ctr: 0,
-            buffer: Err(Error::new(ErrorKind::Other, "oh no!")),
-            line: Err(Error::new(ErrorKind::Other, "oh no!")),
+            buffer: Err(Error::new(ErrorKind::Other, "No valid buffer.")),
+            line: Err(Error::new(ErrorKind::Other, "No valid line.")),
         };
         ls.line_next();
         ls

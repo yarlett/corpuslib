@@ -1,3 +1,3 @@
-pub mod lines;
+pub mod line_streamer;
 
-pub use self::lines::LineStreamer;
+pub use self::line_streamer::LineStreamer;
