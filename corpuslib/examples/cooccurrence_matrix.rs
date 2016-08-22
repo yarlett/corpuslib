@@ -18,45 +18,35 @@ const NF: usize = 4;
 fn main() {
     // Count frequencies of words.
     let t1 = precise_time_ns();
-    let mut f: HashMap<String, usize> = HashMap::new();
+    let mut freqs: HashMap<String, usize> = HashMap::new();
     for line in corpuslib::stream::LineStreamer::new(&DIRECTORY) {
         for word in line.split_whitespace() {
-            let freq = f.entry(word.to_string()).or_insert(0);
+            let freq = freqs.entry(word.to_string()).or_insert(0);
             *freq += 1;
         }
     }
     let t2 = precise_time_ns();
-    println!("Frequencies of {} word types computed ({} ns).", f.len(), t2 - t1);
+    println!("Frequencies of {} word types computed ({} ns).", freqs.len(), t2 - t1);
 
     // Make a set of words which occurred 10 or more times.
     let t1 = precise_time_ns();
-    let mut w: HashSet<String> = HashSet::new();
-    for (word, freq) in &f {
-        if *freq >= MIN_FREQ { w.insert(word.to_string()); }
+    let mut wordset: HashSet<String> = HashSet::new();
+    for (word, freq) in &freqs {
+        if *freq >= MIN_FREQ { wordset.insert(word.to_string()); }
     }
     let t2 = precise_time_ns();
-    println!("{} word types with frequency >= {} retained in word set ({} ns)", w.len(), MIN_FREQ, t2 - t1);
+    println!("{} word types with frequency >= {} retained in word set ({} ns)", wordset.len(), MIN_FREQ, t2 - t1);
 
-    // Count co-occurrences.
+    // Count co-occurrences and write to CSV.
     let t1 = precise_time_ns();
     let mut cooc_counter = corpuslib::coocs::CoocCounter::new(NB, NF);
     for line in corpuslib::stream::LineStreamer::new(&DIRECTORY) {
         for mut word in line.split_whitespace() {
-            if !w.contains(word) { word = "<UNKNOWN>"; }
-            cooc_counter.update(word);
+            if !wordset.contains(word) { word = "<UNKNOWN>" }
+            cooc_counter.update(&word.to_string());
         }
     }
-
-    let freqs = cooc_counter.freqs();
-    let mut ks: Vec<(String, String)> = Vec::new();
-    for key in freqs.keys() { ks.push(key.clone()); }
-    ks.sort();
-    for k in &ks {
-        println!("{:?} -> {:?}", k, freqs.get(k));
-    }
-
-
-    //println!("{:?}", cooc_counter.freqs());
-    let t2 = precise_time_ns();
-    println!("Foo. ({} ns)", t2 - t1);
+    // cooc_counter.to_csv("coocs.csv");
+    // let t2 = precise_time_ns();
+    //println!("{:} distinct co-occurrences counted ({} ns).", cooc_counter.freqs().len(), t2 - t1);
 }

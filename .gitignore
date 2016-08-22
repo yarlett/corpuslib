@@ -12,3 +12,5 @@
 
 # Lock file.
 corpuslib/Cargo.lock
+
+*.csv
