@@ -9,7 +9,7 @@ use time::precise_time_ns;
 // Directory containing a number of corpus text files to be crawled (files can be nested).
 const DIRECTORY: &'static str = "/Users/yarlett/Desktop/1-billion-word-language-modeling-benchmark-r13output/training-monolingual.tokenized.shuffled"; // /news.en-00001-of-00100";
 
-const MIN_FREQ: usize = 10;
+const MIN_FREQ: usize = 25;
 
 const NB: usize = 4;
 const NF: usize = 4;
@@ -28,7 +28,7 @@ fn main() {
     let t2 = precise_time_ns();
     println!("Frequencies of {} word types computed ({} ns).", freqs.len(), t2 - t1);
 
-    // Vocabulary is words that have occurred 10 or more times.
+    // Vocabulary is words that have occurred MIN_FREQ or more times.
     let t1 = precise_time_ns();
     let mut vocabulary: HashSet<String> = HashSet::new();
     for (word, freq) in &freqs {
@@ -43,7 +43,7 @@ fn main() {
     for line in corpuslib::stream::LineStreamer::new(&DIRECTORY) {
         for mut word in line.split_whitespace() {
             if !vocabulary.contains(word) { word = "<UNKNOWN>" }
-            cooc_counter.update(&word);
+            cooc_counter.register(&word);
         }
     }
     cooc_counter.to_csv("coocs.csv");

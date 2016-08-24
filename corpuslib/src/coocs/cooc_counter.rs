@@ -7,27 +7,26 @@ use std::rc::Rc;
 
 
 pub struct CoocCounter<> {
-    freqs:      HashMap<(Rc<String>, Rc<String>), usize>,
-    num_b:      usize,
-    num_f:      usize,
-    vocabulary: HashSet<Rc<String>>,
-    window:     Vec<Option<Rc<String>>>,
-}
-
-
-fn window_initial(num_b: usize, num_f: usize) -> Vec<Option<Rc<String>>> {
-    vec![None; num_b + num_f + 1]
+    events:       HashSet<Rc<String>>,
+    freqs:        HashMap<(Rc<String>, Rc<String>), usize>,
+    num_b:        usize,
+    num_f:        usize,
+    vocabulary:   HashSet<Rc<String>>,
+    window:       Vec<Rc<String>>,
+    window_size:  usize,
 }
 
 
 impl CoocCounter {
     pub fn new(num_b: usize, num_f: usize) -> CoocCounter {
         CoocCounter{
+            events: HashSet::new(),
             freqs: HashMap::new(),
             num_b: num_b,
             num_f: num_f,
             vocabulary: HashSet::new(),
-            window: window_initial(num_b, num_f),
+            window: Vec::new(),
+            window_size: num_b + 1 + num_f,
         }
     }
 
@@ -53,43 +52,33 @@ impl CoocCounter {
         }
     }
 
-    pub fn update(&mut self, word: &str) {
-        // Remove left-most item and add new item to right of window.
-        self.window.remove(0);
+    pub fn register(&mut self, word: &str) {
+        // Update window (remove left-most item; insert new item at right-most point).
+        if self.window.len() >= self.window_size { self.window.remove(0); }
         let word_inner = Rc::new(word.to_string());
         self.vocabulary.insert(word_inner.clone());
-        self.window.push(Some(word_inner.clone()));
-        // Update co-occurrence frequencies.
-        match self.window[self.num_b] {
-            Some(ref target) => {
-                // Backward window.
-                for b in 0..self.num_b {
-                    match self.window[b] {
-                        Some(ref context) => {
-                            let cooc = (target.clone(), context.clone());
-                            let freq = self.freqs.entry(cooc).or_insert(0);
-                            *freq += 1;
-                        },
-                        _ => {},
-                    };
-                };
-                // Forward window.
-                for f in 0..self.num_f {
-                    match self.window[self.num_b + 1 + f] {
-                        Some(ref context) => {
-                            let cooc = (target.clone(), context.clone());
-                            let freq = self.freqs.entry(cooc).or_insert(0);
-                            *freq += 1;
-                        },
-                        _ => {},
-                    };
-                };
-            },
-            _ => {},
+        self.window.push(word_inner.clone());
+        // Update co-occurrences if window is required length.
+        if self.window.len() == self.window_size {
+            let context = self.window[self.num_b].clone();
+            // Get set of events observed in current context.
+            self.events.clear();
+            for b in 0..self.num_b {
+                self.events.insert(self.window[b].clone());
+            }
+            for f in (self.num_b + 1)..(self.num_b + 1 + self.num_f) {
+                self.events.insert(self.window[f].clone());
+            }
+            // Update co-occurrence counts of events that occurred.
+            for e in &self.events {
+                let cooc = (context.clone(), e.clone());
+                let freq = self.freqs.entry(cooc).or_insert(0);
+                *freq += 1;
+            }
         }
     }
 
-    pub fn window(&self) -> &Vec<Option<Rc<String>>> {
+    pub fn window(&self) -> &Vec<Rc<String>> {
         &self.window
     }
 }
