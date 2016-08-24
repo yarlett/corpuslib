@@ -48,6 +48,7 @@ impl LineStreamer {
                 Err(e) => self.buffer = Err(e),
             }
             self.entries_ctr += 1;
+            println!("{:?}", entry.path());
         }
     }
 
