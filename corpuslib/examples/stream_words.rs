@@ -3,7 +3,7 @@ extern crate corpuslib;
 
 fn main() {
     // Directory containing a number of corpus text files to be crawled (files can be nested).
-    let directory = "/Users/yarlett/Desktop/1-billion-word-language-modeling-benchmark-r13output/training-monolingual.tokenized.shuffled";
+    let directory = "/Users/yarlett/Desktop/data/one-billion/training-monolingual.tokenized.shuffled";
 
     // Create line streamer and stream and count words in files.
     let line_streamer = corpuslib::stream::LineStreamer::new(&directory);
