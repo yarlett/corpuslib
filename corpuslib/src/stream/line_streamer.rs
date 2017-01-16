@@ -20,17 +20,23 @@ pub struct LineStreamer {
     entries_ctr: usize,
     buffer: Result<BufReader<File>, Error>,
     line: Result<String, Error>,
+    line_function: Option<fn(String) -> Vec<String>>,
+    line_vector: Result<Vec<String>>,
+    line_vector_ctr: usize,
 }
 
 
 impl LineStreamer {
-    pub fn new(directory: &str) -> LineStreamer {
+    pub fn new(directory: &str, line_function: Option<fn(String) -> String>) -> LineStreamer {
         let entries = get_directory_entries(directory);
         let mut ls = LineStreamer{
             entries: entries,
             entries_ctr: 0,
             buffer: Err(Error::new(ErrorKind::Other, "No valid buffer.")),
             line: Err(Error::new(ErrorKind::Other, "No valid line.")),
+            line_function: None,
+            line_vector:  Err(Error::new(ErrorKind::Other, "No valid line vector.")),
+            line_vector_ctr: 0,
         };
         ls.line_next();
         ls
@@ -48,7 +54,7 @@ impl LineStreamer {
                 Err(e) => self.buffer = Err(e),
             }
             self.entries_ctr += 1;
-            println!("{:?}", entry.path());
+            // println!("{:?}", entry.path());
         }
     }
 
@@ -83,6 +89,24 @@ impl LineStreamer {
         }
         bytes_read
     }
+
+    fn line_vector_next(&mut self) -> String {
+        // Initialize the line vector if it has not been set yet.
+        if self.line_vector.is_err() { self.line_next(); }
+
+        match self.line_function {
+            Some(func) => {
+                self.line_vector = Ok(vec![l.to_string()]);
+                self.line_vector_ctr = 0;
+            },
+            None => {
+                self.line_vector = Ok(vec![l.to_string()]);
+                self.line_vector_ctr = 0;
+            },
+        }
+
+
+    }
 }
 
 
@@ -90,13 +114,17 @@ impl Iterator for LineStreamer {
     type Item = String;
 
     fn next(&mut self) -> Option<String> {
-        // Advance to the next line.
-        self.line_next();
+        // Advance to the next item in the line vector.
+        self.line_vector_next();
+
+        // // Advance to the next line.
+        // self.line_next();
+
         // Return the next string or None to end the iteration.
         match self.line {
             Ok(ref l) => {
-                let string = l.to_string();
-                Some(string)
+                // let string = l.to_string();
+                // Some(string)
             },
             _ => { None },
         }
