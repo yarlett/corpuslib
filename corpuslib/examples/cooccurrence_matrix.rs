@@ -7,7 +7,9 @@ use time::precise_time_ns;
 
 
 // Directory containing a number of corpus text files to be crawled (files can be nested).
-const DIRECTORY: &'static str = "/Users/yarlett/Desktop/1-billion-word-language-modeling-benchmark-r13output/training-monolingual.tokenized.shuffled"; // /news.en-00001-of-00100";
+const DIRECTORY: &'static str = "/Users/yarlett/Desktop/\
+    1-billion-word-language-modeling-benchmark-r13output/\
+    training-monolingual.tokenized.shuffled";
 
 const MIN_FREQ: usize = 25;
 
@@ -26,27 +28,38 @@ fn main() {
         }
     }
     let t2 = precise_time_ns();
-    println!("Frequencies of {} word types computed ({} ns).", freqs.len(), t2 - t1);
+    println!("Frequencies of {} word types computed ({} ns).",
+             freqs.len(),
+             t2 - t1);
 
     // Vocabulary is words that have occurred MIN_FREQ or more times.
     let t1 = precise_time_ns();
     let mut vocabulary: HashSet<String> = HashSet::new();
     for (word, freq) in &freqs {
-        if *freq >= MIN_FREQ { vocabulary.insert(word.to_string()); }
+        if *freq >= MIN_FREQ {
+            vocabulary.insert(word.to_string());
+        }
     }
     let t2 = precise_time_ns();
-    println!("{} word types with frequency >= {} retained in word set ({} ns)", vocabulary.len(), MIN_FREQ, t2 - t1);
+    println!("{} word types with frequency >= {} retained in word set ({} ns)",
+             vocabulary.len(),
+             MIN_FREQ,
+             t2 - t1);
 
     // Count co-occurrences and write to CSV.
     let t1 = precise_time_ns();
     let mut cooc_counter = corpuslib::coocs::CoocCounter::new(NB, NF);
     for line in corpuslib::stream::LineStreamer::new(&DIRECTORY) {
         for mut word in line.split_whitespace() {
-            if !vocabulary.contains(word) { word = "<UNKNOWN>" }
+            if !vocabulary.contains(word) {
+                word = "<UNKNOWN>"
+            }
             cooc_counter.register(&word);
         }
     }
     cooc_counter.to_csv("coocs.csv");
     let t2 = precise_time_ns();
-    println!("{:} distinct co-occurrences counted ({} ns).", cooc_counter.freqs().len(), t2 - t1);
+    println!("{:} distinct co-occurrences counted ({} ns).",
+             cooc_counter.freqs().len(),
+             t2 - t1);
 }

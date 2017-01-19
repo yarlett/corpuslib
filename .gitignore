@@ -15,3 +15,5 @@ corpuslib/Cargo.lock
 
 *.csv
 *.csv.xz
+
+*.rs.bk

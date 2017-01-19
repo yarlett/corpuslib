@@ -6,20 +6,20 @@ use std::path::Path;
 use std::rc::Rc;
 
 
-pub struct CoocCounter<> {
-    events:       HashSet<Rc<String>>,
-    freqs:        HashMap<(Rc<String>, Rc<String>), usize>,
-    num_b:        usize,
-    num_f:        usize,
-    vocabulary:   HashSet<Rc<String>>,
-    window:       Vec<Rc<String>>,
-    window_size:  usize,
+pub struct CoocCounter {
+    events: HashSet<Rc<String>>,
+    freqs: HashMap<(Rc<String>, Rc<String>), usize>,
+    num_b: usize,
+    num_f: usize,
+    vocabulary: HashSet<Rc<String>>,
+    window: Vec<Rc<String>>,
+    window_size: usize,
 }
 
 
 impl CoocCounter {
     pub fn new(num_b: usize, num_f: usize) -> CoocCounter {
-        CoocCounter{
+        CoocCounter {
             events: HashSet::new(),
             freqs: HashMap::new(),
             num_b: num_b,
@@ -41,20 +41,24 @@ impl CoocCounter {
             Ok(mut w) => {
                 // Get sorted cooccurrences.
                 let mut coocs = Vec::new();
-                for cooc in self.freqs.keys() { coocs.push(cooc); }
+                for cooc in self.freqs.keys() {
+                    coocs.push(cooc);
+                }
                 coocs.sort();
                 // Write sorted co-occurrence frequencies to file.
                 for cooc in &coocs {
                     let _ = w.encode((&cooc.0, &cooc.1, self.freqs.get(cooc)));
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 
     pub fn register(&mut self, word: &str) {
         // Update window (remove left-most item; insert new item at right-most point).
-        if self.window.len() >= self.window_size { self.window.remove(0); }
+        if self.window.len() >= self.window_size {
+            self.window.remove(0);
+        }
         let word_inner = Rc::new(word.to_string());
         self.vocabulary.insert(word_inner.clone());
         self.window.push(word_inner.clone());

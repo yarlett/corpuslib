@@ -9,13 +9,16 @@ impl Stringmap {
     pub fn new() -> Stringmap {
         let code_ctr = 0;
         let map = HashMap::new();
-        Stringmap{ code_ctr: code_ctr, map: map }
+        Stringmap {
+            code_ctr: code_ctr,
+            map: map,
+        }
     }
 
     pub fn add(&mut self, s: &String) -> usize {
         let return_code: usize;
         match self.get(s) {
-            Some(&code_value) => { return_code = code_value },
+            Some(&code_value) => return_code = code_value,
             None => {
                 self.map.insert(s.to_string(), self.code_ctr);
                 return_code = self.code_ctr;

@@ -21,11 +21,11 @@ impl Corpus {
             match stringmap.get(s) {
                 Some(&code_value) => {
                     sequence.push(code_value);
-                },
+                }
                 None => {
                     let code_value = stringmap.add(&s);
                     sequence.push(code_value);
-                },
+                }
             }
         }
         // Set suffix array.
@@ -34,18 +34,29 @@ impl Corpus {
             suffix.push(i);
         }
         {
-            let suffix_ordering = |a: &usize, b: &usize| {
-                sequence_compare(&sequence[*a..], &sequence[*b..])
-            };
+            let suffix_ordering =
+                |a: &usize, b: &usize| sequence_compare(&sequence[*a..], &sequence[*b..]);
             suffix.sort_by(suffix_ordering);
         }
         // Return.
-        Corpus { sequence: sequence, suffix: suffix, stringmap: stringmap }
+        Corpus {
+            sequence: sequence,
+            suffix: suffix,
+            stringmap: stringmap,
+        }
     }
 
-    // Returns the left-most suffix pointer to a sequence using binary search.
-    // Also returns a right-most bound for the sequence which can be used to constrain the maximum search.
-    fn binary_search_left(&self, seq: &[usize], suffix_min: usize, suffix_max: usize) -> Result<(usize, usize), bool> {
+    /*
+    Returns the left-most suffix pointer to a sequence using binary search.
+
+    Also returns a right-most bound for the sequence which can be used to constrain the maximum
+    search.
+    */
+    fn binary_search_left(&self,
+                          seq: &[usize],
+                          suffix_min: usize,
+                          suffix_max: usize)
+                          -> Result<(usize, usize), bool> {
         let n = seq.len();
         let mut smin = suffix_min;
         let mut smax = suffix_max;
@@ -64,15 +75,23 @@ impl Corpus {
                 smax = smid;
             }
         }
-        if smax == smin && sequence_compare_n(&self.sequence[self.suffix[smin]..], seq, &n) == cmp::Ordering::Equal {
-            return Ok((smin, right_bound))
+        if smax == smin &&
+           sequence_compare_n(&self.sequence[self.suffix[smin]..], seq, &n) ==
+           cmp::Ordering::Equal {
+            return Ok((smin, right_bound));
         }
         return Err(false);
     }
 
-    // Returns the right-most suffix pointer to a sequence using binary search.
-    // Also returns a leftmost bound for the sequence which can be used to constrain the minimum search.
-    fn binary_search_right(&self, seq: &[usize], suffix_min: usize, suffix_max: usize) -> Result<(usize, usize), bool> {
+    /*
+    Returns the right-most suffix pointer to a sequence using binary search. Also returns a
+    leftmost bound for the sequence which can be used to constrain the minimum search.
+    */
+    fn binary_search_right(&self,
+                           seq: &[usize],
+                           suffix_min: usize,
+                           suffix_max: usize)
+                           -> Result<(usize, usize), bool> {
         let n = seq.len();
         let mut smin = suffix_min;
         let mut smax = suffix_max;
@@ -91,14 +110,16 @@ impl Corpus {
                 smin = smid;
             }
         }
-        if smax == smin && sequence_compare_n(&self.sequence[self.suffix[smin]..], seq, &n) == cmp::Ordering::Equal {
-            return Ok((smax, left_bound))
+        if smax == smin &&
+           sequence_compare_n(&self.sequence[self.suffix[smin]..], seq, &n) ==
+           cmp::Ordering::Equal {
+            return Ok((smax, left_bound));
         }
         return Err(false);
     }
 
     // Returns a vector of distinct ngrams of a specified length in the corpus.
-    pub fn ngrams(&self, n:usize) -> Vec<&[usize]> {
+    pub fn ngrams(&self, n: usize) -> Vec<&[usize]> {
         let mut ngs: Vec<&[usize]> = Vec::new();
         if n >= 1 {
             let seq_max = self.sequence.len() - n;
@@ -112,10 +133,10 @@ impl Corpus {
                             if sequence_compare_n(ng_last, ng, &n) != cmp::Ordering::Equal {
                                 add = true;
                             }
-                        },
+                        }
                         None => {
                             add = true;
-                        },
+                        }
                     }
                     if add {
                         ngs.push(ng);
@@ -133,7 +154,8 @@ impl Corpus {
         let mut suffix_lo = 0;
         let mut suffix_hi = 0;
         for suffix_pos in 0..self.suffix.len() {
-            if sequence_compare_n(&self.sequence[self.suffix[suffix_pos]..], seq, &n) == cmp::Ordering::Equal {
+            if sequence_compare_n(&self.sequence[self.suffix[suffix_pos]..], seq, &n) ==
+               cmp::Ordering::Equal {
                 if !found || (suffix_pos < suffix_lo) {
                     found = true;
                     suffix_lo = suffix_pos;
@@ -146,8 +168,7 @@ impl Corpus {
         }
         if !found {
             Err(false)
-        }
-        else {
+        } else {
             Ok((suffix_lo, suffix_hi))
         }
     }
@@ -156,9 +177,8 @@ impl Corpus {
     pub fn search_binary(&self, seq: &[usize]) -> Result<(usize, usize), bool> {
         let n = seq.len();
         // Binary search to get initial search location.
-        let search_by_suffix_probe = | suffix_value: &usize | {
-            sequence_compare_n(&self.sequence[*suffix_value..], seq, &n)
-        };
+        let search_by_suffix_probe =
+            |suffix_value: &usize| sequence_compare_n(&self.sequence[*suffix_value..], seq, &n);
         let binary_search_result = self.suffix.binary_search_by(search_by_suffix_probe);
         // Act on binary search result.
         match binary_search_result {
@@ -169,14 +189,19 @@ impl Corpus {
                 // Search lower.
                 let left_search = self.binary_search_left(seq, 0, suffix_pos);
                 match left_search {
-                    Ok(r) => { suffix_lo = r.0; },
-                    _ => { },
+                    Ok(r) => {
+                        suffix_lo = r.0;
+                    }
+                    _ => {}
                 }
                 // Search higher.
-                let right_search = self.binary_search_right(seq, suffix_pos, &self.suffix.len() - 1);
+                let right_search =
+                    self.binary_search_right(seq, suffix_pos, &self.suffix.len() - 1);
                 match right_search {
-                    Ok(r) => { suffix_hi = r.0; },
-                    _ => { },
+                    Ok(r) => {
+                        suffix_hi = r.0;
+                    }
+                    _ => {}
                 }
                 // Return suffix range.
                 return Ok((suffix_lo, suffix_hi));
@@ -267,7 +292,12 @@ mod tests {
                 let seq = &c.sequence[seq_pos..(seq_pos + n)];
                 let r1 = c.search_linear(seq);
                 let r2 = c.search_binary(seq);
-                println!("Searching for {:?} (seq_pos={:}; n={:}): linear {:?}; binary {:?}", seq, seq_pos, n, r1, r2);
+                println!("Searching for {:?} (seq_pos={:}; n={:}): linear {:?}; binary {:?}",
+                         seq,
+                         seq_pos,
+                         n,
+                         r1,
+                         r2);
                 assert!(r1 == r2);
             }
         }

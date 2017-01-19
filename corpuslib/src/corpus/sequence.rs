@@ -4,7 +4,10 @@ pub fn sequence_compare(seq1: &[usize], seq2: &[usize]) -> cmp::Ordering {
     sequence_compare_n(seq1, seq2, cmp::max(&seq1.len(), &seq2.len()))
 }
 
-pub fn sequence_compare_n(seq1: &[usize], seq2: &[usize], comparison_length: &usize) -> cmp::Ordering {
+pub fn sequence_compare_n(seq1: &[usize],
+                          seq2: &[usize],
+                          comparison_length: &usize)
+                          -> cmp::Ordering {
     let (n1, n2) = (seq1.len(), seq2.len());
     let mut n = cmp::min(n1, n2);
     if *comparison_length < n {
@@ -61,7 +64,9 @@ mod tests {
             let seq2 = random_sequence(10, 100);
             let cmp1 = sequence_compare(&seq1[..], &seq2[..]);
             let cmp2 = sequence_compare(&seq2[..], &seq1[..]);
-            assert!((cmp1 == cmp::Ordering::Equal && cmp2 == cmp::Ordering::Equal) || (cmp1 == cmp::Ordering::Less && cmp2 == cmp::Ordering::Greater) || (cmp1 == cmp::Ordering::Greater && cmp2 == cmp::Ordering::Less));
+            assert!((cmp1 == cmp::Ordering::Equal && cmp2 == cmp::Ordering::Equal) ||
+                    (cmp1 == cmp::Ordering::Less && cmp2 == cmp::Ordering::Greater) ||
+                    (cmp1 == cmp::Ordering::Greater && cmp2 == cmp::Ordering::Less));
         }
     }
 }
